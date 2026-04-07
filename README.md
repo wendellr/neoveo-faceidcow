@@ -2,12 +2,71 @@
 
 Pipeline de identificação biométrica individual de bovinos por padrão de focinho (muzzle print), usando YOLO11 para detecção de ROI e EfficientNet-B0 + ArcFace para re-ID por embedding.
 
-## Dataset
+## Início rápido (servidor Ubuntu + GPU)
+
+```bash
+# 1. Configurar identidade git (só na primeira vez)
+git config --global user.name "Seu Nome"
+git config --global user.email "seu@email.com"
+
+# 2. Clonar o repositório
+git clone https://github.com/wendellr/neoveo-faceidcow.git
+cd neoveo-faceidcow
+chmod +x start_training.sh
+
+# 3. Rodar — instala dependências, baixa datasets e treina tudo
+./start_training.sh
+```
+
+O script `start_training.sh` cuida automaticamente de:
+- Criar `.venv` e instalar PyTorch cu124 (compatível com driver CUDA 12.8+)
+- Baixar **Li et al. 2022** (~600 MB) do Zenodo 6324361
+- Baixar **Ahmed et al. 2024** do Zenodo 10535934 (detecção)
+- Preparar `data/detection/` e `data/reid/`
+- Treinar YOLO11n → EfficientNet-B0 + ArcFace
+
+> **Ahmed 2024:** se o download automático falhar, baixe manualmente em
+> https://zenodo.org/records/10535934 e extraia em `AhmedMuzzle2024/`
+> com as subpastas `images/` e `labels/`.
+
+Após o treino, copie os pesos para o Mac:
+```bash
+rsync -av usuario@ip-do-servidor:~/neoveo-faceidcow/runs/ ./runs/
+```
+
+## Fluxo de trabalho Mac ↔ Servidor
+
+```
+Mac     →  edita código  →  git push
+Servidor →  git pull      →  ./start_training.sh
+Mac     →  rsync runs/ ←  servidor
+```
+
+Para atualizar somente o código sem re-treinar:
+```bash
+# No servidor
+cd neoveo-faceidcow
+git pull
+```
+
+Os datasets e pesos em `runs/` ficam **só no servidor** (estão no `.gitignore`)
+— o `git pull` nunca sobrescreve o que foi treinado.
+
+---
+
+## Datasets
 
 **Li et al. 2022 — Beef Cattle Muzzle/Noseprint Database**
 - Download: https://zenodo.org/records/6324361
 - 4.923 imagens · 268 bovinos · ~12 imgs/animal
-- Descompacte como `BeefCattle_Muzzle_database/` na raiz do projeto
+- Usado para: **re-ID** (EfficientNet-B0 + ArcFace)
+- Pasta esperada: `BeefCattle_Muzzle_Individualized/`
+
+**Ahmed et al. 2024 — Cattle Muzzle Detection**
+- Download: https://zenodo.org/records/10535934
+- ~8.000 fotos frontais completas · 459 bovinos · anotações YOLO reais
+- Usado para: **detecção** (YOLO11n)
+- Pasta esperada: `AhmedMuzzle2024/images/` + `AhmedMuzzle2024/labels/`
 
 ## Estrutura do projeto
 
