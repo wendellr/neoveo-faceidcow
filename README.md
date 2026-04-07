@@ -84,8 +84,8 @@ Os datasets e pesos em `runs/` ficam **só no servidor** (estão no `.gitignore`
 - Pasta esperada: `BeefCattle_Muzzle_Individualized/`
 
 **Ahmed et al. 2024 — Cattle Muzzle Detection**
-- Download: https://zenodo.org/records/10535934
-- ~8.000 fotos frontais completas · 459 bovinos · anotações YOLO reais
+- Download: https://zenodo.org/records/10535934/files/INDIVIDUAL%20SUBJECTS%20Data.zip?download=1
+- ~13 GB · fotos frontais completas · 459 bovinos · anotações YOLO reais
 - Usado para: **detecção** (YOLO11n)
 - Pasta esperada: `AhmedMuzzle2024/images/` + `AhmedMuzzle2024/labels/`
 

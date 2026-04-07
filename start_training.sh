@@ -88,27 +88,22 @@ fi
 
 # ── 5b. Ahmed et al. 2024 — Detecção (Zenodo 10535934) ────
 DET_DIR="AhmedMuzzle2024"
-# O arquivo principal do Zenodo 10535934 — ajuste o nome se necessário após verificar
-# na página: https://zenodo.org/records/10535934
-DET_URL="https://zenodo.org/records/10535934/files/ahmed_muzzle_2024.zip?download=1"
-DET_ZIP="ahmed_muzzle_2024.zip"
+DET_URL="https://zenodo.org/records/10535934/files/INDIVIDUAL%20SUBJECTS%20Data.zip?download=1"
+DET_ZIP="INDIVIDUAL_SUBJECTS_Data.zip"   # nome local sem espaços
 
 if [ ! -d "$DET_DIR" ]; then
-    echo "      [Ahmed 2024] Baixando dataset de detecção do Zenodo..."
-    if wget -q --show-progress -O "$DET_ZIP" "$DET_URL" 2>/dev/null && [ -s "$DET_ZIP" ]; then
-        echo "      [Ahmed 2024] Extraindo..."
-        unzip -q "$DET_ZIP" -d "$DET_DIR" || (mkdir -p "$DET_DIR" && unzip -q "$DET_ZIP" && mv images labels "$DET_DIR/" 2>/dev/null || true)
-        rm -f "$DET_ZIP"
-        echo "      [Ahmed 2024] Dataset de detecção pronto em $DET_DIR/"
-    else
-        rm -f "$DET_ZIP"
-        echo ""
-        echo "      [Ahmed 2024] ATENÇÃO: download automático falhou."
-        echo "      Baixe manualmente em https://zenodo.org/records/10535934"
-        echo "      e extraia de forma que exista $DET_DIR/images/ e $DET_DIR/labels/"
-        echo ""
-        echo "      O pipeline de detecção será pulado até o dataset estar disponível."
+    echo "      [Ahmed 2024] Baixando dataset de detecção (~13 GB) do Zenodo..."
+    wget --show-progress -O "$DET_ZIP" "$DET_URL"
+    echo "      [Ahmed 2024] Extraindo (pode demorar alguns minutos)..."
+    # O zip extrai para "INDIVIDUAL SUBJECTS Data/" — renomeia para AhmedMuzzle2024/
+    unzip -q "$DET_ZIP"
+    EXTRACTED=$(unzip -Z1 "$DET_ZIP" | head -1 | cut -d'/' -f1)
+    if [ "$EXTRACTED" != "$DET_DIR" ]; then
+        mv "$EXTRACTED" "$DET_DIR"
     fi
+    rm -f "$DET_ZIP"
+    echo "      [Ahmed 2024] Dataset de detecção pronto em $DET_DIR/"
+    echo "      [Ahmed 2024] Verifique que existe $DET_DIR/images/ e $DET_DIR/labels/"
 else
     echo "      [Ahmed 2024] Dataset de detecção já presente, pulando download."
 fi
