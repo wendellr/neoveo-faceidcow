@@ -1,0 +1,35 @@
+# ── Datasets (download feito pelo start_training.sh) ─────────────────────────
+BeefCattle_Muzzle_Individualized/
+AhmedMuzzle2024/
+data/
+
+# ── Pesos e galerias treinados ────────────────────────────────────────────────
+runs/
+*.pt
+*.pth
+*.pkl
+
+# ── Arquivos temporários / empacotados ────────────────────────────────────────
+*.zip
+*.tar.gz
+
+# ── Virtual environment ───────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+
+# ── Python cache ──────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# ── macOS ─────────────────────────────────────────────────────────────────────
+.DS_Store
+._*
+
+# ── Editor ────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp

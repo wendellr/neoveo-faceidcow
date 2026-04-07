@@ -1,0 +1,8 @@
+# Neoveo.ai — Cattle Muzzle Re-ID Pipeline
+# requirements.txt
+# torch e torchvision são instalados pelo start_training.sh com o wheel CUDA correto
+ultralytics>=8.3.0
+timm>=1.0.0
+opencv-python>=4.9.0
+Pillow>=10.0.0
+numpy>=1.24.0
