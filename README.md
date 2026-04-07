@@ -29,17 +29,29 @@ O script `start_training.sh` cuida automaticamente de:
 > https://zenodo.org/records/10535934 e extraia em `AhmedMuzzle2024/`
 > com as subpastas `images/` e `labels/`.
 
-Após o treino, copie os pesos para o Mac:
+Após o treino, baixe os pesos para o Mac via **iTerm2 (`it2dl`)**:
 ```bash
-rsync -av usuario@ip-do-servidor:~/neoveo-faceidcow/runs/ ./runs/
+# No servidor — empacota apenas os pesos (pequeno, ~50 MB)
+cd ~/neoveo-faceidcow
+zip -r runs_weights.zip runs/detect/neoveo_muzzle_v1/weights/best.pt \
+                        runs/reid/neoveo_reid_v1/best_reid.pth \
+                        runs/reid/neoveo_reid_v1/embeddings_val.pkl
+
+# Ainda no servidor — envia para o Mac pelo iTerm2
+it2dl runs_weights.zip
+```
+O arquivo aparece em `~/Downloads/` no Mac. Depois:
+```bash
+# No Mac — extrai mantendo estrutura runs/
+cd ~/Downloads && unzip runs_weights.zip -d /caminho/para/neoveo-faceidcow/
 ```
 
 ## Fluxo de trabalho Mac ↔ Servidor
 
 ```
-Mac     →  edita código  →  git push
+Mac      →  edita código  →  git push
 Servidor →  git pull      →  ./start_training.sh
-Mac     →  rsync runs/ ←  servidor
+Servidor →  zip pesos     →  it2dl arquivo.zip  →  Mac
 ```
 
 Para atualizar somente o código sem re-treinar:
