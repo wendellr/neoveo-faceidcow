@@ -22,12 +22,11 @@ echo "=================================================="
 #   "ahmed"     → produção (~13 GB), qualidade máxima
 DETECTION_SOURCE="roboflow"
 #
-# Se DETECTION_SOURCE="roboflow":
-#   1. Acesse https://universe.roboflow.com
-#   2. Busque por: cattle muzzle  (ou cow nose, bovine muzzle)
-#   3. Escolha um dataset → Download Dataset → YOLOv11 → curl
-#   4. Copie a URL que aparece e cole abaixo (entre aspas)
-ROBOFLOW_ZIP_URL=""   # ex: "https://universe.roboflow.com/ds/XXXXX?key=YYYY"
+# Credenciais Roboflow (usadas quando DETECTION_SOURCE="roboflow")
+ROBOFLOW_API_KEY="vC9uejrKZl2HK0qpXiVJ"
+ROBOFLOW_WORKSPACE="learning-zjxbd"
+ROBOFLOW_PROJECT="cattle-muzzle-9p6vt"
+ROBOFLOW_VERSION="1"
 # ════════════════════════════════════════════════════════════
 
 # ── 1. Verificar Python ─────────────────────────────────────
@@ -108,20 +107,18 @@ DET_DIR="DetectionDataset"
 
 if [ "$DETECTION_SOURCE" = "roboflow" ]; then
     if [ ! -d "$DET_DIR" ]; then
-        if [ -z "$ROBOFLOW_ZIP_URL" ]; then
-            echo ""
-            echo "      [ERRO] ROBOFLOW_ZIP_URL não definida."
-            echo "      Acesse universe.roboflow.com, escolha seu dataset de muzzle bovino,"
-            echo "      clique em Download → YOLOv11 → curl e copie a URL."
-            echo "      Cole em ROBOFLOW_ZIP_URL= no topo de start_training.sh"
-            exit 1
-        fi
-        echo "      [Roboflow] Baixando dataset de detecção..."
-        wget --show-progress -O roboflow_det.zip "$ROBOFLOW_ZIP_URL"
-        echo "      [Roboflow] Extraindo..."
-        mkdir -p "$DET_DIR"
-        unzip -q roboflow_det.zip -d "$DET_DIR"
-        rm -f roboflow_det.zip
+        echo "      [Roboflow] Baixando dataset via API Python..."
+        python3 - <<PYEOF
+from roboflow import Roboflow
+import os, shutil
+rf = Roboflow(api_key="$ROBOFLOW_API_KEY")
+project = rf.workspace("$ROBOFLOW_WORKSPACE").project("$ROBOFLOW_PROJECT")
+version = project.version(int("$ROBOFLOW_VERSION"))
+dataset = version.download("yolov11")
+# Renomeia para DetectionDataset/
+if os.path.exists(dataset.location) and dataset.location != "DetectionDataset":
+    shutil.move(dataset.location, "DetectionDataset")
+PYEOF
         echo "      [Roboflow] Pronto em $DET_DIR/"
     else
         echo "      [Roboflow] Dataset já presente, pulando download."
