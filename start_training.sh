@@ -13,6 +13,23 @@ echo " Neoveo — Cattle Muzzle Re-ID Training"
 echo " Dir: $PROJECT_DIR"
 echo "=================================================="
 
+# ╔══════════════════════════════════════════════════════════╗
+# ║  CONFIGURAÇÃO — edite aqui antes de rodar               ║
+# ╚══════════════════════════════════════════════════════════╝
+#
+# Dataset de DETECÇÃO — escolha uma opção:
+#   "roboflow"  → rápido (~200 MB), ideal para validar o pipeline
+#   "ahmed"     → produção (~13 GB), qualidade máxima
+DETECTION_SOURCE="roboflow"
+#
+# Se DETECTION_SOURCE="roboflow":
+#   1. Acesse https://universe.roboflow.com
+#   2. Busque por: cattle muzzle  (ou cow nose, bovine muzzle)
+#   3. Escolha um dataset → Download Dataset → YOLOv11 → curl
+#   4. Copie a URL que aparece e cole abaixo (entre aspas)
+ROBOFLOW_ZIP_URL=""   # ex: "https://universe.roboflow.com/ds/XXXXX?key=YYYY"
+# ════════════════════════════════════════════════════════════
+
 # ── 1. Verificar Python ─────────────────────────────────────
 echo ""
 echo "[1/7] Verificando Python..."
@@ -86,26 +103,47 @@ else
     echo "      [Li 2022] Dataset re-ID já presente, pulando download."
 fi
 
-# ── 5b. Ahmed et al. 2024 — Detecção (Zenodo 10535934) ────
-DET_DIR="AhmedMuzzle2024"
-DET_URL="https://zenodo.org/records/10535934/files/INDIVIDUAL%20SUBJECTS%20Data.zip?download=1"
-DET_ZIP="INDIVIDUAL_SUBJECTS_Data.zip"   # nome local sem espaços
+# ── 5b. Dataset de detecção ──────────────────────────────────────────────────
+DET_DIR="DetectionDataset"
 
-if [ ! -d "$DET_DIR" ]; then
-    echo "      [Ahmed 2024] Baixando dataset de detecção (~13 GB) do Zenodo..."
-    wget --show-progress -O "$DET_ZIP" "$DET_URL"
-    echo "      [Ahmed 2024] Extraindo (pode demorar alguns minutos)..."
-    # O zip extrai para "INDIVIDUAL SUBJECTS Data/" — renomeia para AhmedMuzzle2024/
-    unzip -q "$DET_ZIP"
-    EXTRACTED=$(unzip -Z1 "$DET_ZIP" | head -1 | cut -d'/' -f1)
-    if [ "$EXTRACTED" != "$DET_DIR" ]; then
-        mv "$EXTRACTED" "$DET_DIR"
+if [ "$DETECTION_SOURCE" = "roboflow" ]; then
+    if [ ! -d "$DET_DIR" ]; then
+        if [ -z "$ROBOFLOW_ZIP_URL" ]; then
+            echo ""
+            echo "      [ERRO] ROBOFLOW_ZIP_URL não definida."
+            echo "      Acesse universe.roboflow.com, escolha seu dataset de muzzle bovino,"
+            echo "      clique em Download → YOLOv11 → curl e copie a URL."
+            echo "      Cole em ROBOFLOW_ZIP_URL= no topo de start_training.sh"
+            exit 1
+        fi
+        echo "      [Roboflow] Baixando dataset de detecção..."
+        wget --show-progress -O roboflow_det.zip "$ROBOFLOW_ZIP_URL"
+        echo "      [Roboflow] Extraindo..."
+        mkdir -p "$DET_DIR"
+        unzip -q roboflow_det.zip -d "$DET_DIR"
+        rm -f roboflow_det.zip
+        echo "      [Roboflow] Pronto em $DET_DIR/"
+    else
+        echo "      [Roboflow] Dataset já presente, pulando download."
     fi
-    rm -f "$DET_ZIP"
-    echo "      [Ahmed 2024] Dataset de detecção pronto em $DET_DIR/"
-    echo "      [Ahmed 2024] Verifique que existe $DET_DIR/images/ e $DET_DIR/labels/"
+elif [ "$DETECTION_SOURCE" = "ahmed" ]; then
+    if [ ! -d "$DET_DIR" ]; then
+        DET_URL="https://zenodo.org/records/10535934/files/INDIVIDUAL%20SUBJECTS%20Data.zip?download=1"
+        DET_ZIP="INDIVIDUAL_SUBJECTS_Data.zip"
+        echo "      [Ahmed 2024] Baixando dataset de detecção (~13 GB) do Zenodo..."
+        wget --show-progress -O "$DET_ZIP" "$DET_URL"
+        echo "      [Ahmed 2024] Extraindo (pode demorar alguns minutos)..."
+        unzip -q "$DET_ZIP"
+        EXTRACTED=$(unzip -Z1 "$DET_ZIP" | head -1 | cut -d'/' -f1)
+        mv "$EXTRACTED" "$DET_DIR"
+        rm -f "$DET_ZIP"
+        echo "      [Ahmed 2024] Pronto em $DET_DIR/"
+    else
+        echo "      [Ahmed 2024] Dataset já presente, pulando download."
+    fi
 else
-    echo "      [Ahmed 2024] Dataset de detecção já presente, pulando download."
+    echo "      [ERRO] DETECTION_SOURCE='$DETECTION_SOURCE' inválido. Use 'roboflow' ou 'ahmed'."
+    exit 1
 fi
 
 # ── 6. Verificar CUDA ──────────────────────────────────────

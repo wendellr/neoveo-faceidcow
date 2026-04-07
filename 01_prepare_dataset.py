@@ -37,7 +37,7 @@ import random
 from pathlib import Path
 
 # ── Config ──────────────────────────────────────────────────────────────────
-DETECTION_ROOT = Path("AhmedMuzzle2024")          # Ahmed et al. 2024 — Zenodo 10535934
+DETECTION_ROOT = Path("DetectionDataset")          # Roboflow (padrão) ou Ahmed 2024 — ver start_training.sh
 REID_ROOT_SRC  = Path("BeefCattle_Muzzle_Individualized")  # Li et al. 2022 — Zenodo 6324361
 OUTPUT_ROOT    = Path("data")
 SEED           = 42
@@ -59,11 +59,11 @@ def get_cattle_dirs(root: Path) -> list[Path]:
 
 def prepare_detection(det_src: Path, det_out: Path, split: float):
     """
-    Copia imagens e labels YOLO já existentes do Ahmed 2024
-    para data/detection/, fazendo o split train/val.
+    Prepara formato YOLO para detectar muzzle.
 
-    Espera det_src/images/*.jpg e det_src/labels/*.txt (mesmo stem).
-    Também aceita subpastas dentro de images/ e labels/.
+    Auto-detecta o formato de entrada:
+      - Roboflow (pré-dividido): det_src/train/images/ + det_src/valid/images/
+      - Flat (Ahmed 2024):       det_src/images/ + det_src/labels/  → split automático
     """
     img_train = det_out / "images" / "train"
     img_val   = det_out / "images" / "val"
@@ -72,50 +72,68 @@ def prepare_detection(det_src: Path, det_out: Path, split: float):
     for p in [img_train, img_val, lbl_train, lbl_val]:
         p.mkdir(parents=True, exist_ok=True)
 
-    img_dir = det_src / "images"
-    lbl_dir = det_src / "labels"
-
-    if not img_dir.exists():
-        raise FileNotFoundError(
-            f"Pasta 'images/' não encontrada em {det_src}. "
-            "Verifique a estrutura do Ahmed 2024."
-        )
-
     img_exts = {".jpg", ".jpeg", ".png"}
-    all_images = sorted([p for p in img_dir.rglob("*") if p.suffix.lower() in img_exts])
 
-    if not all_images:
-        raise FileNotFoundError(f"Nenhuma imagem encontrada em {img_dir}")
+    if (det_src / "train").exists():
+        # ── Formato Roboflow (já pré-dividido) ──────────────────────────────
+        print("[DET] Formato Roboflow detectado (train/valid pré-divididos)")
+        counts = {"train": 0, "valid": 0}
+        for subset_name, out_img_dir, out_lbl_dir in [
+            ("train", img_train, lbl_train),
+            ("valid", img_val,   lbl_val),
+        ]:
+            src_imgs = det_src / subset_name / "images"
+            src_lbls = det_src / subset_name / "labels"
+            if not src_imgs.exists():
+                continue
+            for img_path in src_imgs.rglob("*"):
+                if img_path.suffix.lower() not in img_exts:
+                    continue
+                shutil.copy2(img_path, out_img_dir / img_path.name)
+                lbl_src = src_lbls / (img_path.stem + ".txt")
+                if lbl_src.exists():
+                    shutil.copy2(lbl_src, out_lbl_dir / lbl_src.name)
+                counts[subset_name] += 1
+        print(f"[DET] {counts['train']} train | {counts['valid']} val")
 
-    random.shuffle(all_images)
-    n_train = int(len(all_images) * split)
-    train_imgs = all_images[:n_train]
-    val_imgs   = all_images[n_train:]
-
-    missing_labels = 0
-    for subset_imgs, out_img_dir, out_lbl_dir in [
-        (train_imgs, img_train, lbl_train),
-        (val_imgs,   img_val,   lbl_val),
-    ]:
-        for img_path in subset_imgs:
-            shutil.copy2(img_path, out_img_dir / img_path.name)
-            lbl_src = lbl_dir / (img_path.stem + ".txt")
-            # Tenta também dentro de subpastas
-            if not lbl_src.exists():
-                candidates = list(lbl_dir.rglob(img_path.stem + ".txt"))
-                lbl_src = candidates[0] if candidates else lbl_src
-            if lbl_src.exists():
-                shutil.copy2(lbl_src, out_lbl_dir / lbl_src.name)
-            else:
-                missing_labels += 1
-
-    if missing_labels:
-        print(f"[WARN] {missing_labels} imagens sem label correspondente")
-
-    print(f"[DET] {len(train_imgs)} train | {len(val_imgs)} val")
+    else:
+        # ── Formato flat (Ahmed 2024) — split manual ─────────────────────────
+        print("[DET] Formato flat (images/ + labels/) detectado")
+        img_dir = det_src / "images"
+        lbl_dir = det_src / "labels"
+        if not img_dir.exists():
+            raise FileNotFoundError(
+                f"Nem 'train/' nem 'images/' encontrado em {det_src}.\n"
+                "Verifique a estrutura do DetectionDataset/."
+            )
+        all_images = sorted([p for p in img_dir.rglob("*") if p.suffix.lower() in img_exts])
+        if not all_images:
+            raise FileNotFoundError(f"Nenhuma imagem encontrada em {img_dir}")
+        random.shuffle(all_images)
+        n_train = int(len(all_images) * split)
+        train_imgs = all_images[:n_train]
+        val_imgs   = all_images[n_train:]
+        missing = 0
+        for subset_imgs, out_img_dir, out_lbl_dir in [
+            (train_imgs, img_train, lbl_train),
+            (val_imgs,   img_val,   lbl_val),
+        ]:
+            for img_path in subset_imgs:
+                shutil.copy2(img_path, out_img_dir / img_path.name)
+                lbl_src = lbl_dir / (img_path.stem + ".txt")
+                if not lbl_src.exists():
+                    candidates = list(lbl_dir.rglob(img_path.stem + ".txt"))
+                    lbl_src = candidates[0] if candidates else lbl_src
+                if lbl_src.exists():
+                    shutil.copy2(lbl_src, out_lbl_dir / lbl_src.name)
+                else:
+                    missing += 1
+        if missing:
+            print(f"[WARN] {missing} imagens sem label correspondente")
+        print(f"[DET] {len(train_imgs)} train | {len(val_imgs)} val")
 
     yaml_path = det_out / "muzzle.yaml"
-    yaml_path.write_text(f"""# Neoveo.ai — Cattle Muzzle Detection (Ahmed et al. 2024)
+    yaml_path.write_text(f"""# Neoveo.ai — Cattle Muzzle Detection
 path: {det_out.resolve()}
 train: images/train
 val:   images/val
@@ -167,8 +185,8 @@ def prepare_reid(reid_src: Path, reid_out: Path, splits: tuple):
 def main():
     if not DETECTION_ROOT.exists():
         raise FileNotFoundError(
-            f"Dataset de detecção não encontrado em '{DETECTION_ROOT}'. "
-            "Baixe Ahmed et al. 2024 (Zenodo 10535934) e ajuste DETECTION_ROOT."
+            f"Dataset de detecção não encontrado em '{DETECTION_ROOT}'.\n"
+            "Execute start_training.sh ou extraia manualmente para DetectionDataset/."
         )
     if not REID_ROOT_SRC.exists():
         raise FileNotFoundError(

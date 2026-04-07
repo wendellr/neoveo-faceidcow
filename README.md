@@ -29,14 +29,29 @@ git remote set-url origin https://SEU_TOKEN@github.com/wendellr/neoveo-faceidcow
 
 O script `start_training.sh` cuida automaticamente de:
 - Criar `.venv` e instalar PyTorch cu124 (compatível com driver CUDA 12.8+)
-- Baixar **Li et al. 2022** (~600 MB) do Zenodo 6324361
-- Baixar **Ahmed et al. 2024** do Zenodo 10535934 (detecção)
+- Baixar dataset de **detecção** (Roboflow por padrão, ou Ahmed 2024)
+- Baixar **Li et al. 2022** (~600 MB) para re-ID
 - Preparar `data/detection/` e `data/reid/`
 - Treinar YOLO11n → EfficientNet-B0 + ArcFace
 
-> **Ahmed 2024:** se o download automático falhar, baixe manualmente em
-> https://zenodo.org/records/10535934 e extraia em `AhmedMuzzle2024/`
-> com as subpastas `images/` e `labels/`.
+### Configuração obrigatória antes de rodar
+
+Abra `start_training.sh` e edite o bloco de configuração no topo:
+
+```bash
+# Dataset de DETECÇÃO — escolha uma opção:
+#   "roboflow"  → rápido (~200 MB), ideal para validar o pipeline
+#   "ahmed"     → produção (~13 GB), qualidade máxima
+DETECTION_SOURCE="roboflow"
+
+# Se DETECTION_SOURCE="roboflow":
+#   1. Acesse https://universe.roboflow.com
+#   2. Busque: cattle muzzle  (ou cow nose, bovine muzzle)
+#   3. Dataset → Download → YOLOv11 → curl → copie a URL
+ROBOFLOW_ZIP_URL=""   # cole a URL aqui
+```
+
+> **Ahmed 2024:** se preferir o dataset completo, mude para `DETECTION_SOURCE="ahmed"` — o script baixa os 13 GB automaticamente.
 
 Após o treino, baixe os pesos para o Mac via **iTerm2 (`it2dl`)**:
 ```bash
@@ -83,11 +98,18 @@ Os datasets e pesos em `runs/` ficam **só no servidor** (estão no `.gitignore`
 - Usado para: **re-ID** (EfficientNet-B0 + ArcFace)
 - Pasta esperada: `BeefCattle_Muzzle_Individualized/`
 
-**Ahmed et al. 2024 — Cattle Muzzle Detection**
+**Roboflow Universe — detecção (opção rápida, recomendada para validar)**
+- Acesse: https://universe.roboflow.com
+- Busque: `cattle muzzle`, `cow nose`, `bovine muzzle`
+- Formato de download: **YOLOv11** (já vem com train/valid split e labels)
+- Tamanho: ~200 MB · tempo de treino: ~3 min na RTX 4070
+- Estrutura gerada: `DetectionDataset/train/` + `DetectionDataset/valid/`
+
+**Ahmed et al. 2024 — opção produção**
 - Download: https://zenodo.org/records/10535934/files/INDIVIDUAL%20SUBJECTS%20Data.zip?download=1
 - ~13 GB · fotos frontais completas · 459 bovinos · anotações YOLO reais
-- Usado para: **detecção** (YOLO11n)
-- Pasta esperada: `AhmedMuzzle2024/images/` + `AhmedMuzzle2024/labels/`
+- Usado para: **detecção** (YOLO11n) em produção
+- Estrutura esperada: `DetectionDataset/images/` + `DetectionDataset/labels/`
 
 ## Estrutura do projeto
 
