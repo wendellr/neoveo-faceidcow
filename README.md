@@ -4,17 +4,26 @@ Pipeline de identificação biométrica individual de bovinos por padrão de foc
 
 ## Início rápido (servidor Ubuntu + GPU)
 
+Este é um repositório **privado**. É necessário um Personal Access Token (PAT) do GitHub.
+
+**Gerar o token (só uma vez):**
+GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)
+→ Generate new token → marcar **`repo`** → copiar o token
+
 ```bash
 # 1. Configurar identidade git (só na primeira vez)
 git config --global user.name "Seu Nome"
 git config --global user.email "seu@email.com"
 
-# 2. Clonar o repositório
-git clone https://github.com/wendellr/neoveo-faceidcow.git
+# 2. Clonar com o PAT na URL (repositório privado)
+git clone https://SEU_TOKEN@github.com/wendellr/neoveo-faceidcow.git
 cd neoveo-faceidcow
 chmod +x start_training.sh
 
-# 3. Rodar — instala dependências, baixa datasets e treina tudo
+# 3. Salvar o token para futuros git pull (opcional)
+git remote set-url origin https://SEU_TOKEN@github.com/wendellr/neoveo-faceidcow.git
+
+# 4. Rodar — instala dependências, baixa datasets e treina tudo
 ./start_training.sh
 ```
 
