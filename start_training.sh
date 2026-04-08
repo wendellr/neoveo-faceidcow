@@ -20,7 +20,7 @@ echo "=================================================="
 # Dataset de DETECÇÃO — escolha uma opção:
 #   "roboflow"  → rápido (~200 MB), ideal para validar o pipeline
 #   "ahmed"     → produção (~13 GB), qualidade máxima
-DETECTION_SOURCE="roboflow"
+DETECTION_SOURCE="ahmed"
 #
 # Credenciais Roboflow (usadas quando DETECTION_SOURCE="roboflow")
 ROBOFLOW_API_KEY="vC9uejrKZl2HK0qpXiVJ"
